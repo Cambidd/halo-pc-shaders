@@ -1,14 +1,8 @@
-SamplerState TexSampler0;
-Texture2D Texture0;
+SamplerState TexSampler2 : register(s0);
+TextureCube Texture2: register(s0);
 
-SamplerState TexSampler1;
-TextureCube Texture1;
-
-SamplerState TexSampler2;
-TextureCube Texture2;
-
-SamplerState TexSampler3;
-Texture2D Texture3;
+SamplerState TexSampler3 : register(s1);
+Texture2D Texture3 : register(s1);
 
 struct PS_INPUT {
 	float4 Pos : SV_POSITION;
@@ -41,9 +35,11 @@ half4 main(PS_INPUT i) : SV_TARGET
 	half4 c_view_perpendicular_color = constants[1];
 	half4 c_view_parallel_color = constants[2];
 
+	// Theres something borked with this consant in-engine, so set to zero on xy to make it work sort of properly
+	c_eye_forward.xy = 0.0f;
 
-	half4 T0 = Texture0.Sample(TexSampler0, Tex0.xy);
-	half4 T1 = Texture1.Sample(TexSampler1, Tex1.xyz);
+	//half4 T0 = Texture0.Sample(TexSampler0, Tex0.xy);
+	//half4 T1 = Texture1.Sample(TexSampler1, Tex1.xyz);
 	half4 T2 = Texture2.Sample(TexSampler2, Tex2.xyz);
 	half4 T3 = Texture3.Sample(TexSampler3, Tex3.xy / Tex3.w);
 	

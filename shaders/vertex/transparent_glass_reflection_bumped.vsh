@@ -12,8 +12,7 @@ struct VS_OUTPUT {
    float4 T1 : TEXCOORD1;
    float4 T2 : TEXCOORD2;
    float4 T3 : TEXCOORD3;
-   float4 T4 : TEXCOORD4;
-
+// float4 T4 : TEXCOORD4;
 };
 
 struct VS_INPUT {
@@ -45,10 +44,6 @@ VS_OUTPUT main(VS_INPUT i)
    // (1) eye vector ------------------------------------------------------------------------
    R_EYE_VECTOR.xyz = -V_POSITION.xyz + C_EYE_POSITION;   
    
-   //dp3 R_EYE_VECTOR.a, R_EYE_VECTOR.xyz, R_EYE_VECTOR.xyz
-   //rsq R_TEMP0.a, R_EYE_VECTOR.a
-   //mul R_EYE_VECTOR.rgb, R_EYE_VECTOR.rgb, R_TEMP0.a
-   
    // (4) output homogeneous point ----------------------------------------------------------
    o.Pos.x = dot(V_POSITION, C_VIEWPROJ_X);   
    o.Pos.y = dot(V_POSITION, C_VIEWPROJ_Y);   
@@ -56,7 +51,7 @@ VS_OUTPUT main(VS_INPUT i)
    o.Pos.w = dot(V_POSITION, C_VIEWPROJ_W);   
    
    // (13) output texcoords -----------------------------------------------------------------
-   o.T0.xy = (V_TEXCOORD.xy) * (C_PRIMARY_DETAIL_SCALE) + C_SECONDARY_DETAIL_SCALE;   // bump map
+   o.T0.xy = (V_TEXCOORD.xy) * (C_PRIMARY_DETAIL_SCALE);   // bump map
    o.T1.x = V_TANGENT.x;   
    o.T1.y = V_BINORMAL.x;   
    o.T1.z = V_NORMAL.x;   
@@ -68,14 +63,27 @@ VS_OUTPUT main(VS_INPUT i)
    o.T3.z = V_NORMAL.z;   
    o.T1.w = R_EYE_VECTOR.x;   
    o.T2.w = R_EYE_VECTOR.y;   
-   o.T3.w = R_EYE_VECTOR.z;
-
-   // Invert T0 mip map level
-   o.T0.x = 1.0f - o.T0.x;
+   o.T3.w = R_EYE_VECTOR.z;   
    
-   // (2) atmospheric fog ----------------------------------------------------------------
-   //R_ATMOSPHERIC_FOG_DENSITY = saturate(dot(V_POSITION, C_ATMOSPHERIC_FOG_GRADIENT));
-   //o.T4 = R_ATMOSPHERIC_FOG_DENSITY;   
+   // (17) fog ------------------------------------------------------------------------------
+   R_PLANAR_FOG_VERTEX_DENSITY = dot(V_POSITION, C_PLANAR_FOG_GRADIENT1);   // x
+   R_PLANAR_FOG_EYE_DISTANCE = dot(V_POSITION, C_PLANAR_FOG_GRADIENT2);   // y
+   R_ATMOSPHERIC_FOG_DENSITY = dot(V_POSITION, C_ATMOSPHERIC_FOG_GRADIENT);   // z
+   R_FOG_DENSITY.xy = V_ONE + -R_FOG_DENSITY;   // {1 - x, 1 - y}
+   R_FOG_DENSITY.xyz = max(R_FOG_DENSITY.xyz, V_ZERO);   // clamp to zero
+   R_FOG_DENSITY.xy = (R_FOG_DENSITY.xy) * (R_FOG_DENSITY);   // {(1 - x)^2, (1 - y)^2}
+   R_FOG_DENSITY.xyz = min(R_FOG_DENSITY.xyz, V_ONE);   // clamp to one
+   R_FOG_DENSITY.x = R_FOG_DENSITY.x + R_FOG_DENSITY.y;   // (1 - x)^2 + (1 - y)^2
+   R_FOG_DENSITY.x = min(R_FOG_DENSITY.x, V_ONE);   // clamp to one
+   R_FOG_DENSITY.xy = V_ONE + -R_FOG_DENSITY;   // {1 - (1 - x)^2 - (1 - y)^2, 1 - (1 - y)^2}
+   R_FOG_DENSITY.xy = (R_FOG_DENSITY.xy) * (R_FOG_DENSITY);   // {(1 - (1 - x)^2 - (1 - y)^2)^2, (1 - (1 - y)^2)^2}
+   R_FOG_DENSITY.y = R_FOG_DENSITY.y + -R_FOG_DENSITY.x;   
+   R_PLANAR_FOG_DENSITY = (C_PLANAR_FOG_EYE_DENSITY) * (R_FOG_DENSITY.y) + R_FOG_DENSITY.x;   
+   R_PLANAR_FOG_DENSITY = (R_PLANAR_FOG_DENSITY) * (C_PLANAR_FOG_MAXIMUM_DENSITY);   // Pf
+   R_ATMOSPHERIC_FOG_DENSITY = (R_ATMOSPHERIC_FOG_DENSITY) * (C_ATMOSPHERIC_FOG_MAXIMUM_DENSITY);   // Af
+   R_FOG_DENSITY.xyzw = -R_FOG_DENSITY.xyzw + V_ONE;   // (1 - Af),(1 - Pf)
+   o.D0.w = (R_ATMOSPHERIC_FOG_DENSITY) * (R_PLANAR_FOG_DENSITY);   // (1 - Af)*(1 - Pf)
+   o.D0.xyz = C_GLASS_ONE;   
 
    return o;
 }
