@@ -30,7 +30,7 @@ cbuffer constants_buffer {
 }
 
 // LightmapNormal
-half4 main(PS_INPUT i)
+half4 main(PS_INPUT i) : SV_TARGET
 {
    // Inputs
    half4 Diff = i.D0;

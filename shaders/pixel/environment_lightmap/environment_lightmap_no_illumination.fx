@@ -17,7 +17,7 @@ struct PS_INPUT {
 };
 
 cbuffer constants_buffer {
-	float4 constants[2];
+	float4 constants[1];
 	//half4 c_material_color;
 	//float c_alpha_ref;
 }
@@ -31,7 +31,6 @@ half4 main(PS_INPUT i) : SV_TARGET
 	half3 Tex3 = i.T3;
 
 	half4 c_material_color = constants[0];
-	float c_alpha_ref = constants[1].w;
 
 	half4 bump_color = tex2D(TexSampler0, Tex0.xy);
 	half3 lightmap_color = tex2D(TexSampler2, Tex2.xy);
@@ -40,10 +39,13 @@ half4 main(PS_INPUT i) : SV_TARGET
 	////////////////////////////////////////////////////////////
 	// calculate bump attenuation
 	////////////////////////////////////////////////////////////
-	half baked_attenuation = dot(normalize(2*normal_color.rgb-1), half3(0.0f, 0.0f, 1.0f));
 	half bump_attenuation = dot((2*bump_color.rgb)-1, (2*normal_color.rgb)-1);
-	bump_attenuation = 1 + bump_attenuation - baked_attenuation;
-	bump_attenuation = lerp(1, bump_attenuation, Diff.a);
+	half bump_attenuation_default = (bump_attenuation * Diff.a) + 1-Diff.a;
+
+	half baked_attenuation = dot(normalize(2*normal_color.rgb-1), half3(0.0f,0.0f,1.0f));
+	baked_attenuation = lerp(1, 1 + bump_attenuation - baked_attenuation, Diff.a);
+
+	bump_attenuation = lerp(baked_attenuation, bump_attenuation_default, c_material_color.a);
 
 	////////////////////////////////////////////////////////////
 	// combine output
@@ -53,6 +55,6 @@ half4 main(PS_INPUT i) : SV_TARGET
 	final_color *= c_material_color;
 
 	
-	return TestAlphaGreaterRef( half4( final_color, bump_color.a), c_alpha_ref );
+	return half4( final_color, bump_color.a);
 };
 
