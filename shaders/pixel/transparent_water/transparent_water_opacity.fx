@@ -48,7 +48,7 @@ half4 main_T0_P1(PS_INPUT i) : SV_TARGET
 {
    half fog = i.T2;
 
-   // TODO Find what this value is for
+   // atmospheric fog bit ? 1: 0
    float4 c2 = constants[2];
 
    half4 t0 = Texture0.Sample(TexS0, i.T0.xy); // texture0: base map

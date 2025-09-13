@@ -7,6 +7,7 @@ Pixel
 - transparent_water_reflection
 - transparent_water_bumpmap_convolution
 - transparent_glass_reflection_bumped (registers differ between ce/retail)
+- transparent_glass_reflection_flat
 - transparent_plasma
 
 (shader model has constants memes for retail)
@@ -29,8 +30,8 @@ Pixel
 - environment_lightmap_no_illumination_no_lightmap (stock one used in retail)
 - environment_lightmap_no_lightmap (stock one in retail)
 - environment_diffuse_lights
-- environment_specular_light_bumped
-- environment_specular_light_flat
+- environment_specular_light_bumped (bunch of bullshit done to get rid of the texture/sampler mismatch the game expects will work. Needs chimera changes to work right)
+- environment_specular_light_flat (as above)
 - environment_specular_lightmap_bumped
 - environment_specular_lightmap_flat
 - environment_texture_normal_biased_add_biased_add
@@ -43,7 +44,6 @@ Pixel
 - environment_texture_normal_multiply_multiply
 
 Vertex
-(used patched stock ones but the h1a ones should work the same more or less)
 - transparent_water_opacity
 - transparent_water_opacity_m
 - transparent_water_reflection
@@ -66,3 +66,14 @@ Most of the stock ps_2_0 shaders that retail uses have changes to the shader con
 - transparent_glass_reflection_mirror (1_4 in ce)
 - all of shader_model
 - some of screen effect
+
+# Shaders changed from CEnshine
+- Changed transparent_glass_reflection_bumped (for retail samplers)
+- Added transparent_glass_reflection_flat (made it work)
+- Changed/Added shader_model (Added the rest, fixed the transparency issue with Sleds dev build, enabled xbox channel order support via a shader constant)
+- Added environment_reflection_mirror_bumped (for retail)
+- Changed environment_lightmap_normal (to support retail)
+- Changed environment_lightmap_no_illumination (to use "con" fix via setting a shader constant)
+- Changed environment_specular_light_bumped (to meme out the texture/sampler mismatch)
+- Changed environment_specular_light_flat (as above)
+- Changed/Added active_camouflage_draw (Fixed it)

@@ -1,16 +1,16 @@
 #include "alpha_tests.h"
+
 SamplerState TexS0;
 Texture2D Texture0;
 
 SamplerState TexS1;
-TextureCube Texture1_CUBE;
-Texture3D Texture1_3D;
+TextureCube Texture1;
 
 SamplerState TexS2;
 TextureCube Texture2;
 
 SamplerState TexS3;
-TextureCube Texture3;
+Texture3D Texture3;
 
 struct PS_INPUT {
 	float4 Pos : SV_POSITION;
@@ -29,19 +29,26 @@ cbuffer constants_buffer {
 // Custom Edition only uses "SpotLights" with the name "EnvironmentSpecularLightFlat"
 // Pass SpotLights
 half4 main_T0_P0(PS_INPUT i) : SV_TARGET {
-	// texture0: specular mask
-	half3 t0 = Texture0.Sample(TexS0, i.T0.xy).rgb;
-	// texture1: gel
-	half3 t1 = Texture1_CUBE.Sample(TexS1, i.T1.xyz).rgb;
-	// E texture2: vector normalization (eye vector)
-	half3 t2 = Texture2.Sample(TexS2, i.T2.xyz).rgb;
-	// L texture3: vector normalization (light vector)
-	half3 t3 = Texture3.Sample(TexS3, i.T3.xyz).rgb;
-
 	half4 c_specular_brightness = constants[0];
 	half4 c_view_perpendicular_color = constants[1];
 	half4 c_view_parallel_color = constants[2];
 	half4 c_multiplier = constants[3];
+
+	// N texture0: bump map
+	half3 t0 = Texture0.Sample(TexS0, i.T0.xy).rgb;
+	// texture1: gel
+	// This required some memeing to get working in a single-shader solution
+	// without relying on undefined texture sampling behaviour.
+	half3 t1a = Texture1.Sample(TexS1, i.T1.xyz).rgb;
+	half3 t1b = Texture3.Sample(TexS3, i.T1.xyz).rgb;
+	half3 t1 = lerp(t1b, t1a, c_view_perpendicular_color.a);
+
+	// Game sets the same texture for these 2 so we can reuse it and repurpose
+	// Texture3 for the flashlight specular.
+	// E texture2: vector normalization (eye vector)
+	half3 t2 = Texture2.Sample(TexS2, i.T2.xyz).rgb;
+	// L texture3: vector normalization (light vector)
+	half3 t3 = Texture2.Sample(TexS2, i.T3.xyz).rgb;
 
 	// apply specular mask
 	t1 = t1 * t0;
@@ -71,7 +78,7 @@ half4 main_T0_P0(PS_INPUT i) : SV_TARGET {
 	return TestAlphaGreater00(saturate(res));
 
 };
-
+/* 
 // Pass PointLight
 half4 main_T0_P1(PS_INPUT i) : SV_TARGET {
 	// texture0: specular mask
@@ -113,3 +120,4 @@ half4 main_T0_P1(PS_INPUT i) : SV_TARGET {
 
 	return TestAlphaGreater00(saturate(res));
 };
+ */
