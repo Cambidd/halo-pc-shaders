@@ -7,16 +7,14 @@
 // _shader_framebuffer_blend_function_add
 // _shader_framebuffer_blend_function_alpha_multiply_add
 
-SamplerState TexS0 : register(s0);
-Texture2D Texture0 : register(t0);
+sampler2D Texture0 : register(s0);
 
 #if defined(HAS_SECOND_COLOR_MAP) || defined(ZSPRITE)
 #define HAS_SECOND_TEXTURE
 #endif
 
 #ifdef HAS_SECOND_TEXTURE
-SamplerState TexS1 : register(s1);
-Texture2D Texture1 : register(t1);
+sampler2D Texture1 : register(s1);
 #endif
 
 struct PS_INPUT {
@@ -43,7 +41,7 @@ void main(
 {
 	half4 d0 = i.D0; // d0.a premultiplied by d1.a in vsh
 
-	half4 t0 = Texture0.Sample(TexS0, i.T0.xy);
+	half4 t0 = tex2D(Texture0, i.T0.xy);
 	half4 r0;
 	r0.a = t0.a;
 
@@ -58,7 +56,7 @@ void main(
 #endif
 
 #ifdef HAS_SECOND_TEXTURE
-	half4 t1 = Texture1.Sample(TexS1, i.T1.xy);
+	half4 t1 = tex2D(Texture1, i.T1.xy);
 #endif
 
 // apply secondary color map

@@ -1,0 +1,51 @@
+#include "alpha_tests.h"
+
+sampler2D Texture0;
+sampler2D Texture1;
+samplerCUBE Texture2;
+samplerCUBE Texture3;
+
+float4 c_specular_brightness : register(c0);
+float4 c_view_perpendicular_color : register(c1);
+float4 c_view_parallel_color : register(c2);
+float4 c_multiplier : register(c3);
+
+struct PS_INPUT {
+	float4 Pos : SV_POSITION;
+	float4 D0 : COLOR0;
+	float4 D1 : COLOR1;
+	float4 T0 : TEXCOORD0;
+	float4 T1 : TEXCOORD1;
+	float4 T2 : TEXCOORD2;
+	float4 T3 : TEXCOORD3;
+};
+
+half4 main(PS_INPUT i) : SV_TARGET {
+	// texture0: bump map is_specular_mask
+	half3 specular_mask = tex2D(Texture0, i.T0.xy).rgb;
+	// texture1: lightmap
+	half3 lightmap_color = tex2D(Texture1, i.T1.xy).rgb;
+	// E texture2: vector normalization (eye vector)
+	half3 t2 = texCUBE(Texture2, i.T2.xyz).rgb;
+	// L texture3: vector normalization (light vector)
+	half3 t3 = texCUBE(Texture3, i.T3.xyz).rgb;
+	
+	half3 N = half3(0, 0, 1);
+	half3 E = 2 * t2 - 1;
+	half3 L = 2 * t3 - 1;
+	
+	half NdotE = saturate(dot(N, E));
+	half3 R = 2 * NdotE * N - E;
+	
+	half lightmap_brightness = dot(lightmap_color, 0.5);
+	half s = saturate(dot(R, L));
+	
+	half self_shadow = saturate(L.z * 4) * saturate(E.z * 4);
+	half3 color = lerp(c_view_parallel_color.rgb, c_view_perpendicular_color.rgb, NdotE);
+
+	half4 res;
+	res.rgb = saturate(color * lightmap_brightness * c_multiplier.a) * saturate(self_shadow * c_specular_brightness.a) * pow(s, 8) * 0.5;
+	res.a = saturate(dot(lightmap_brightness, specular_mask) * c_specular_brightness.a * c_multiplier.a) * pow(s, 4) * 3;
+
+	return TestAlphaGreater00(saturate(res));
+}

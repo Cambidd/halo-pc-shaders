@@ -1,16 +1,14 @@
 #include "alpha_tests.h"
 
-SamplerState TexS0;
-Texture2D Texture0;
+sampler2D Texture0;
+samplerCUBE Texture1;
+samplerCUBE Texture2;
+sampler3D Texture3;
 
-SamplerState TexS1;
-TextureCube Texture1;
-
-SamplerState TexS2;
-TextureCube Texture2;
-
-SamplerState TexS3;
-Texture3D Texture3;
+float4 c_specular_brightness : register(c0);
+float4 c_view_perpendicular_color : register(c1);
+float4 c_view_parallel_color : register(c2);
+float4 c_multiplier : register(c3);
 
 struct PS_INPUT {
 	float4 Pos : SV_POSITION;
@@ -22,40 +20,31 @@ struct PS_INPUT {
 	float4 T3 : TEXCOORD3;
 };
 
-cbuffer constants_buffer {
-	half4 constants[4];
-}
-
 // Custom Edition only uses "SpotLights" with the name "SpecularLightBumped"
 // Pass SpotLights
-half4 main_T0_P0(PS_INPUT i) : SV_TARGET {
-	half4 c_specular_brightness = constants[0];
-	half4 c_view_perpendicular_color = constants[1];
-	half4 c_view_parallel_color = constants[2];
-	half4 c_multiplier = constants[3];
-
+half4 main(PS_INPUT i) : SV_TARGET {
 	// N texture0: bump map
-	half3 t0 = Texture0.Sample(TexS0, i.T0.xy).rgb;
+	half3 t0 = tex2D(Texture0, i.T0.xy).rgb;
 	// texture1: gel
 	// This required some memeing to get working in a single-shader solution
 	// without relying on undefined texture sampling behaviour.
-	half3 t1a = Texture1.Sample(TexS1, i.T1.xyz).rgb;
-	half3 t1b = Texture3.Sample(TexS3, i.T1.xyz).rgb;
+	half3 t1a = texCUBE(Texture1, i.T1.xyz).rgb;
+	half3 t1b = tex3D(Texture3, i.T1.xyz).rgb;
 	half3 t1 = lerp(t1b, t1a, c_view_perpendicular_color.a);
 
 	// Game sets the same texture for these 2 so we can reuse it and repurpose
 	// Texture3 for the flashlight specular.
 	// E texture2: vector normalization (eye vector)
-	half3 t2 = Texture2.Sample(TexS2, i.T2.xyz).rgb;
+	half3 t2 = texCUBE(Texture2, i.T2.xyz).rgb;
 	// L texture3: vector normalization (light vector)
-	half3 t3 = Texture2.Sample(TexS2, i.T3.xyz).rgb;
+	half3 t3 = texCUBE(Texture2, i.T3.xyz).rgb;
 
 
 	half3 N = 2 * t0 - 1;
 	half3 E = 2 * t2 - 1;
 	half3 L = 2 * t3 - 1;
 
-	half NdotE = dot(N, E);
+	half NdotE = saturate(dot(N, E));
 	// reflected light vector
 	half3 R = 2 * NdotE * N - E;
 
@@ -63,17 +52,20 @@ half4 main_T0_P0(PS_INPUT i) : SV_TARGET {
 	half s = saturate(dot(R, L));
 	half self_shadow = saturate(L.z * 8) * saturate(E.z * 8);
 	half3 color = lerp(c_view_parallel_color.rgb, c_view_perpendicular_color.rgb, NdotE);
-	
+
 	half4 res;
 	//s^8, color, gel, self-shadow, brightness
-	res.rgb = pow(s, 8) * color * t1 * self_shadow * c_multiplier.z * brightness;
+	//res.rgb = pow(s, 8) * color * t1 * self_shadow * c_multiplier.z * brightness;
+	res.rgb = pow(s, 8) * saturate(color * t1 * c_multiplier.z) * saturate(self_shadow * brightness);
+
 	// apply distance attenuation
 	res.rgb *= (1 - i.D1.w);
 	// brightness, gel, s^8 (active pixel mask)
-	res.a = dot(brightness, t1) * c_multiplier.z * pow(s, 4) * 3;
+	res.a = saturate(dot(brightness, t1) * c_multiplier.z) * pow(s, 4) * 3;
 
 	return TestAlphaGreater00(saturate(res));
 };
+
 /* 
 // Pass PointLight
 half4 main_T0_P1(PS_INPUT i) : SV_TARGET {
