@@ -1,3 +1,3 @@
-half4 main() : SV_TARGET {
+half4 main() : COLOR {
     return 0, 0, 0, 1;
 }

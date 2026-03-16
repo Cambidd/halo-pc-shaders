@@ -18,7 +18,7 @@ sampler2D Texture1 : register(s1);
 #endif
 
 struct PS_INPUT {
-   float4 Pos : SV_POSITION;
+   float4 Pos : VPOS;
    float4 D0 : COLOR0;
    float4 D1 : COLOR1;
    float4 T0 : TEXCOORD0;
@@ -33,9 +33,9 @@ struct PS_INPUT {
 
 void main(
 	PS_INPUT i, 
-	out float4 oColor : SV_TARGET
+	out float4 oColor : COLOR
 #ifdef ZSPRITE
-	,out float oDepth : SV_DEPTH
+	,out float oDepth : DEPTH
 #endif
 	)
 {
