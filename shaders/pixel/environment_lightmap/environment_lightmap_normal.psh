@@ -12,6 +12,10 @@ float4 c_secondary_color : register(c3);
 float4 c_plasma_on_color : register(c4);
 float4 c_plasma_off_color : register(c5);
 
+#ifdef CUSTOM_EDITION
+float4 c_gearbox_bumpmaps : register(c6);
+#endif
+
 struct PS_INPUT {
    float4 Pos : SV_POSITION;
    float4 D0 : COLOR0;
@@ -66,6 +70,13 @@ half4 main(PS_INPUT i) : SV_TARGET
 		bump_attenuation = saturate(bump_attenuation);
    }
    float bump_attenuation_with_accuracy = lerp(1, bump_attenuation, Diff.a);
+
+#ifdef CUSTOM_EDITION
+	if (c_gearbox_bumpmaps.a != 0.f)
+	{
+		bump_attenuation_with_accuracy = bump_attenuation = 1.0f;
+	}
+#endif
 
 	////////////////////////////////////////////////////////////
 	// calculate primary and secondary glow

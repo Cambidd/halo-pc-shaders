@@ -10,7 +10,10 @@ float4 c_primary_color : register(c2);
 float4 c_secondary_color : register(c3);
 float4 c_plasma_on_color : register(c4);
 float4 c_plasma_off_color : register(c5);
+
+#ifdef CUSTOM_EDITION
 float4 c_gearbox_bumpmaps : register(c6);
+#endif
 
 struct PS_INPUT {
 	float4 Pos : SV_POSITION;
@@ -49,10 +52,12 @@ half4 main(PS_INPUT i) : SV_TARGET
 		bump_attenuation = (bump_attenuation * Diff.a) + 1-Diff.a;
 	}
 
+#ifdef CUSTOM_EDITION
 	// Vomit
 	if(c_gearbox_bumpmaps.a != 0.f) {
 		bump_attenuation = 1.0f;
 	}
+#endif
 
 	////////////////////////////////////////////////////////////
 	// combine output

@@ -1,8 +1,16 @@
-SamplerState TexSampler2 : register(s0);
-TextureCube Texture2: register(s0);
+#ifdef CUSTOM_EDITION
+sampler2D Texutre0 : register(s0);
+samplerCUBE Texture1 : register(s1);
+samplerCUBE Texture2 : register(s2);
+sampler2D Texture3 : register(s3);
+#else
+samplerCUBE Texture2 : register(s0);
+sampler2D Texture3 : register(s1);
+#endif
 
-SamplerState TexSampler3 : register(s1);
-Texture2D Texture3 : register(s1);
+float4 c_eye_forward : register(c0);
+float4 c_view_perpendicular_color : register(c1);
+float4 c_view_parallel_color : register(c2);
 
 struct PS_INPUT {
 	float4 Pos : SV_POSITION;
@@ -14,13 +22,6 @@ struct PS_INPUT {
 	float4 T3 : TEXCOORD3;
 };
 
-cbuffer constants_buffer {
-	half4 constants[3];
-	//half4 c_eye_forward;
-	//half4 c_view_perpendicular_color;
-	//half4 c_view_parallel_color;
-}
-
 // EnvironmentReflectionMirrorBumped
 half4 main(PS_INPUT i) : SV_TARGET
 {
@@ -31,17 +32,13 @@ half4 main(PS_INPUT i) : SV_TARGET
 	half4 Tex2 = i.T2;
 	half4 Tex3 = i.T3;
 
-	half4 c_eye_forward = constants[0];
-	half4 c_view_perpendicular_color = constants[1];
-	half4 c_view_parallel_color = constants[2];
-
 	// Theres something borked with this consant in-engine, so set to zero on xy to make it work sort of properly
-	c_eye_forward.xy = 0.0f;
+	//c_eye_forward.xy = 0.0f;
 
 	//half4 T0 = Texture0.Sample(TexSampler0, Tex0.xy);
 	//half4 T1 = Texture1.Sample(TexSampler1, Tex1.xyz);
-	half4 T2 = Texture2.Sample(TexSampler2, Tex2.xyz);
-	half4 T3 = Texture3.Sample(TexSampler3, Tex3.xy / Tex3.w);
+	half4 T2 = texCUBE(Texture2, Tex2.xyz);
+	half4 T3 = tex2Dproj(Texture3, Tex3);
 	
 	half3 R0;
 	half R0a;
