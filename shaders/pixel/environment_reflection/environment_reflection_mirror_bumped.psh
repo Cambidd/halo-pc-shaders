@@ -1,11 +1,11 @@
-#ifdef CUSTOM_EDITION
-sampler2D Texutre0 : register(s0);
-samplerCUBE Texture1 : register(s1);
-samplerCUBE Texture2 : register(s2);
-sampler2D Texture3 : register(s3);
+#ifdef RETAIL
+samplerCUBE TexSampler2 : register(s0);
+sampler2D TexSampler3 : register(s1);
 #else
-samplerCUBE Texture2 : register(s0);
-sampler2D Texture3 : register(s1);
+sampler2D TexSampler0 : register(s0);
+samplerCUBE TexSampler1 : register(s1);
+samplerCUBE TexSampler2 : register(s2);
+sampler2D TexSampler3 : register(s3);
 #endif
 
 float4 c_eye_forward : register(c0);
@@ -32,13 +32,10 @@ half4 main(PS_INPUT i) : SV_TARGET
 	half4 Tex2 = i.T2;
 	half4 Tex3 = i.T3;
 
-	// Theres something borked with this consant in-engine, so set to zero on xy to make it work sort of properly
-	//c_eye_forward.xy = 0.0f;
-
-	//half4 T0 = Texture0.Sample(TexSampler0, Tex0.xy);
-	//half4 T1 = Texture1.Sample(TexSampler1, Tex1.xyz);
-	half4 T2 = texCUBE(Texture2, Tex2.xyz);
-	half4 T3 = tex2Dproj(Texture3, Tex3);
+	//half4 T0 = tex2D(Texture0, Tex0.xy);
+	//half4 T1 = texCUBE(Texture1, Tex1.xyz);
+	half4 T2 = texCUBE(TexSampler2, Tex2.xyz);
+	half4 T3 = tex2Dproj(TexSampler3, Tex3);
 	
 	half3 R0;
 	half R0a;

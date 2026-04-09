@@ -1,17 +1,17 @@
 #ifdef RETAIL
 sampler2D TexSampler0 : register(s0);
-samplerCUBE TexSampler2 : register(s1);
-samplerCUBE TexSampler3 : register(s2);
+samplerCUBE TexSampler1 : register(s1);
+sampler2D TexSampler3 : register(s2);
 #else
 sampler2D TexSampler0 : register(s0);
-samplerCUBE TexSampler2 : register(s1);
-samplerCUBE TexSampler3 : register(s3);
+samplerCUBE TexSampler1 : register(s1);
+samplerCUBE TexSampler2 : register(s2);
+sampler2D TexSampler3 : register(s3);
 #endif
 
 float4 c_eye_forward : register(c0);
 float4 c_view_perpendicular_color : register(c1);
 float4 c_view_parallel_color : register(c2);
-float4 c_group_intensity : register(c3);
 
 struct PS_INPUT {
    float4 Pos : SV_POSITION;
@@ -23,34 +23,38 @@ struct PS_INPUT {
    float4 T3 : TEXCOORD3;
 };
 
-void CalculateEyeDirAndNormal(half2 Tex0, half4 Tex1, half4 Tex2, half4 Tex3, out half3 E, out half3 N)
-{
-	E = normalize(half3(Tex1.w, Tex2.w, Tex3.w));
-
-	half3 bump_color = 2*tex2D(TexSampler0, Tex0.xy)-1; // TexSampler0: bump map
-	N = normalize(half3(dot(Tex1, bump_color), dot(Tex2, bump_color), dot(Tex3, bump_color)));
-}
-
-// GlassReflectionBumped
 half4 main(PS_INPUT i) : SV_TARGET
 {
-	// Inputs
-	half4 Diff = i.D0;
-	half2 Tex0 = i.T0;
+	// INPUTS
+	half4 Tex0 = i.T0;
 	half4 Tex1 = i.T1;
 	half4 Tex2 = i.T2;
 	half4 Tex3 = i.T3;
 
-   half3 E, N;
-   CalculateEyeDirAndNormal(Tex0, Tex1, Tex2, Tex3, E, N);
-   half3 R = normalize(2*dot(N, E)*N - E);
+	half3 t0 = tex2D(TexSampler0, Tex0.xy).rgb;
+
+	half3 E1, N1;
+	half3 E2, N2;
 	
-	half3 reflection_color = texCUBE(TexSampler3, R.xyz); // TexSampler3: specular reflection cube map
+	// non-local viewer eye vector in tangent space
+	E1 = 2 * (texCUBE(TexSampler1, Tex1.xyz).rgb - 0.5); // eye vector_normalization
+	N1 = 2 * (t0 - 0.5); // texture0: bump map
+	
+	// no bump map texture, world space vectors
+	E2 = c_eye_forward.xyz; // ws eye
+	N2 = 2 * (texCUBE(TexSampler1, Tex2.xyz).rgb - 0.5); // ws normal vector_normalization
+	
+	half3 E, N;
+	// c_eye_forward.w 1 when bump map NONE
+	E = lerp(E1, E2, c_eye_forward.w);
+	N = lerp(N1, N2, c_eye_forward.w);
+	
+	half3 reflection_color = tex2Dproj(TexSampler3, Tex3); // TexSampler3: mirror
 	half3 specular_color = pow(reflection_color, 8);
 	
 	half diffuse_reflection = pow(saturate(dot(N, E)), 2);
-
-    half specular_mask = Diff.a * c_group_intensity.x; // group intensity
+	
+    half3 specular_mask = t0.rgb;
 
 	half attenuation = lerp( c_view_parallel_color.a, c_view_perpendicular_color.a, diffuse_reflection );
 	
@@ -62,4 +66,3 @@ half4 main(PS_INPUT i) : SV_TARGET
 
    return half4(final_color, 1.0);
 }
-

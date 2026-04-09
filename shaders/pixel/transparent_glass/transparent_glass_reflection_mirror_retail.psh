@@ -1,5 +1,5 @@
-samplerCUBE Texture1 : register(s0);
-sampler2D Texture3: register(s1);
+samplerCUBE TexSampler2 : register(s0);
+sampler2D TexSampler3: register(s1);
 
 float4 c_eye_forward : register(c0);
 float4 c_view_perpendicular_color : register(c1);
@@ -31,12 +31,12 @@ half4 main(PS_INPUT i) : SV_TARGET
 	half3 E, N;
 	// no bump map texture, world space vectors
 	E = c_eye_forward.xyz; // ws eye
-	N = 2 * (texCUBE(Texture1, Tex2.xyz).rgb - 0.5); // ws normal vector_normalization
+	N = 2 * (texCUBE(TexSampler2, Tex2.xyz).rgb - 0.5); // ws normal vector_normalization
 	
-	half3 reflection_color = tex2D(Texture3, Tex3.xy / Tex3.w); // texture3: mirror
+	half3 reflection_color = tex2D(TexSampler3, Tex3.xy / Tex3.w); // TexSampler3: mirror
 	half3 specular_color = pow(reflection_color, 8);
 	
-	half diffuse_reflection = pow(dot(N, E), 2);
+	half diffuse_reflection = pow(saturate(dot(N, E)), 2);
 
 	half attenuation = lerp( c_view_parallel_color.a, c_view_perpendicular_color.a, diffuse_reflection );
 	

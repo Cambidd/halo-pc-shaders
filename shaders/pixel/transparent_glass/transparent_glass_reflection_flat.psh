@@ -51,7 +51,7 @@ half4 main(PS_INPUT i) : SV_TARGET
 	half3 reflection_color = texCUBE(Texture3, R.xyz); // texture3: specular reflection cube map
 	half3 specular_color = pow(reflection_color, 8);
 	
-	half diffuse_reflection = pow(dot(N, E), 2);
+	half diffuse_reflection = pow(saturate(dot(N, E)), 2);
 	
 	// params.x group intensity
    half3 specular_mask = lerp(Diff.a * c_group_intensity.x, t0.rgb, c_group_intensity.z); // params.z 1 -> bump_map_is_specular_mask 
